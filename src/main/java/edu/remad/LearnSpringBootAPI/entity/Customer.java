@@ -33,6 +33,12 @@ public class Customer {
 
   /**
    * Constructor
+   */
+  public Customer() {
+  }
+
+  /**
+   * Constructor
    *
    * @param firstName first name of customer to set
    * @param lastName  last name of customer to set
@@ -110,4 +116,13 @@ public class Customer {
    * last name of customer, also column for table customer on data base
    */
   private String lastName;
+
+  /**
+   * Sets id.
+   *
+   * @param id numeric unique primary key to set
+   */
+  public void setId(Long id) {
+    this.id = id;
+  }
 }
