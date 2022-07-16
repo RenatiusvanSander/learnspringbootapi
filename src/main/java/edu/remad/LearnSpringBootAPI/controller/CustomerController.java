@@ -1,5 +1,6 @@
 package edu.remad.LearnSpringBootAPI.controller;
 
+import edu.remad.LearnSpringBootAPI.CustomerNotFoundException;
 import edu.remad.LearnSpringBootAPI.entity.Customer;
 import edu.remad.LearnSpringBootAPI.repository.CustomerRepository;
 import java.util.List;
@@ -74,7 +75,7 @@ public class CustomerController {
   @GetMapping(ENDPOINTS_MAPPING_BASE + "/{id}")
   public Customer getCustomer(@PathVariable Long id) {
     return this.customerRepository.findById(id)
-        .orElseThrow(() -> new RuntimeException(id.toString()));
+        .orElseThrow(() -> new CustomerNotFoundException(id));
   }
 
   /**
