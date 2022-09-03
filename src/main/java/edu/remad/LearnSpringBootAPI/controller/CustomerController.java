@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.hateoas.CollectionModel;
 import org.springframework.hateoas.EntityModel;
+import org.springframework.hateoas.IanaLinkRelations;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,10 +21,11 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
 /**
- * Controls REST endpoints concerning {@link Customer}. Endpoints are reachable via http://localhost:8080/customer
+ * Controls REST endpoints concerning {@link Customer}. Endpoints are reachable via
+ * http://localhost:8080/customer
  */
+@RestController
 public class CustomerController {
 
   /**
@@ -55,30 +58,34 @@ public class CustomerController {
   /**
    * Method to get all customers
    *
-   * @return all instances of {@link Customer}
+   * @return all instances of {@link Customer} as {@link ResponseEntity}
    */
   @GetMapping(ENDPOINTS_MAPPING_BASE)
-  public CollectionModel<EntityModel<Customer>> index() {
+  public ResponseEntity<CollectionModel<EntityModel<Customer>>> index() {
     List<EntityModel<Customer>> customers = this.customerRepository.findAll().stream()
-        .map(assembler::toModel)
-        .collect(Collectors.toList());
+        .map(assembler::toModel).collect(Collectors.toList());
 
-    return CollectionModel.of(customers,
+    CollectionModel<EntityModel<Customer>> collectionModel = CollectionModel.of(customers,
         linkTo(methodOn(CustomerController.class).index()).withSelfRel());
+
+    return ResponseEntity.created(collectionModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
+        .body(collectionModel);
   }
 
   /**
    * Creates {@link Customer}
    *
    * @param customer customer to save
-   * @return saved {@link Customer}
+   * @return saved {@link Customer}  as {@link ResponseEntity}
    */
   @PostMapping("ENDPOINTS_MAPPING_BASE")
-  public EntityModel<Customer> createCustomer(@RequestBody Customer customer) {
+  public ResponseEntity<?> createCustomer(@RequestBody Customer customer) {
     try {
       Customer savedCustomer = this.customerRepository.save(customer);
+      EntityModel<Customer> customerToReturn = assembler.toModel(savedCustomer);
 
-      return assembler.toModel(savedCustomer);
+      return ResponseEntity.created(
+          customerToReturn.getRequiredLink(IanaLinkRelations.SELF).toUri()).body(customerToReturn);
     } catch (Exception e) {
       throw new CustomerNotFoundException(0L);
     }
@@ -88,14 +95,16 @@ public class CustomerController {
    * Reads a {@link Customer}.
    *
    * @param id long-encoded identifier, as snynony primary kley of customer to load.
-   * @return loaded {@link Customer}
+   * @return loaded {@link Customer} as {@link ResponseEntity}
    */
   @GetMapping(ENDPOINTS_MAPPING_BASE + "/{id}")
-  public EntityModel<Customer> getCustomer(@PathVariable Long id) {
+  public ResponseEntity<?> getCustomer(@PathVariable Long id) {
     Customer customer = this.customerRepository.findById(id)
         .orElseThrow(() -> new CustomerNotFoundException(id));
+    EntityModel<Customer> customerModel = assembler.toModel(customer);
 
-    return assembler.toModel(customer);
+    return ResponseEntity.created(customerModel.getRequiredLink(IanaLinkRelations.SELF).toUri())
+        .body(customerModel);
   }
 
   /**
@@ -103,12 +112,12 @@ public class CustomerController {
    *
    * @param newCustomer new customer to update found
    * @param id          long-encodedidentifier, as synonym primary key of customer to update
-   * @return updated or saved {@link Customer}
+   * @return updated or saved {@link Customer} as {@link ResponseEntity}
    */
   @PutMapping(ENDPOINTS_MAPPING_BASE + "/{id}")
-  public EntityModel<Customer> updateCustomer(@RequestBody Customer newCustomer,
+  public ResponseEntity<?> updateCustomer(@RequestBody Customer newCustomer,
       @PathVariable Long id) {
-    return this.customerRepository.findById(id).map(customer -> {
+    EntityModel<Customer> upCustomer = this.customerRepository.findById(id).map(customer -> {
       customer.setFirstName(newCustomer.getFirstName());
       customer.setLastName(newCustomer.getLastName());
       Customer updatedCustomer = this.customerRepository.save(customer);
@@ -120,15 +129,21 @@ public class CustomerController {
 
       return assembler.toModel(savedCustomer);
     });
+
+    return ResponseEntity.created(upCustomer.getRequiredLink(IanaLinkRelations.SELF).toUri())
+        .body(upCustomer);
   }
 
   /**
    * Deletes instance of {@link Customer}
    *
    * @param id long-value encoded identifier to delete matching {@link Customer}
+   * @return contentless instance of {@link ResponseEntity}
    */
   @DeleteMapping(ENDPOINTS_MAPPING_BASE + "/{id}")
-  public void deleteCustomer(@PathVariable Long id) {
+  public ResponseEntity<?> deleteCustomer(@PathVariable Long id) {
     this.customerRepository.deleteById(id);
+
+    return ResponseEntity.noContent().build();
   }
 }
